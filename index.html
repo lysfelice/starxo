@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tic-Tac-Toe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg1:#fbe6f7;--bg2:#e3cdf3;--bg3:#bba8e8;--deep:#7a5bc2;--deep2:#5a409c;--soft:#a9c3f6;--yel:#ffd868;--cream:#fff3d2;--pink:#f48f9b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;font-family:"Nunito","Trebuchet MS",system-ui,sans-serif;font-weight:400;color:var(--deep)}
+body{background:linear-gradient(180deg,var(--bg1),var(--bg2) 55%,var(--bg3));overflow:hidden}
+/* halftone dots + sparkles + dashed doodle, like the reference art */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;
+ background:
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 2Q22 18 38 20Q22 22 20 38Q18 22 2 20Q18 18 20 2Z' fill='none' stroke='%237a5bc2' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E") 8% 12%/34px no-repeat,
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 2Q22 18 38 20Q22 22 20 38Q18 22 2 20Q18 18 20 2Z' fill='none' stroke='%23f48f9b' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E") 88% 20%/28px no-repeat,
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 2Q22 18 38 20Q22 22 20 38Q18 22 2 20Q18 18 20 2Z' fill='none' stroke='%237a5bc2' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E") 14% 82%/26px no-repeat,
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 2Q22 18 38 20Q22 22 20 38Q18 22 2 20Q18 18 20 2Z' fill='none' stroke='%23f48f9b' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E") 82% 88%/36px no-repeat,
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200'%3E%3Cpath d='M0 150C100 40 200 190 300 90S400 60 410 40' fill='none' stroke='%23fff6d6' stroke-width='5' stroke-dasharray='22 16' stroke-linecap='round'/%3E%3C/svg%3E") 0 38%/130% auto no-repeat,
+  radial-gradient(rgba(255,255,255,.45) 1.2px,transparent 1.6px) 0 0/7px 7px}
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:20px;text-align:center;overflow-y:auto;background-size:cover;background-position:center}
+.screen.on{display:flex}
+/* headings = chunky purple sticker text with white outline */
+h1,h2{margin:0;font-weight:800;font-size:clamp(30px,8vw,46px);color:var(--deep);-webkit-text-stroke:7px #fff;paint-order:stroke fill;text-shadow:0 3px 0 rgba(122,91,194,.25);letter-spacing:1px}
+/* buttons = purple speech-bubble tag with cream inner line + yellow star */
+.btn{position:relative;border:4px solid var(--deep);background:linear-gradient(180deg,#c9b9f5,#a98fe6);color:#fff;font-size:24px;font-weight:800;font-family:inherit;padding:12px 34px 12px 54px;border-radius:999px;min-width:230px;cursor:pointer;
+ -webkit-text-stroke:5px var(--deep);paint-order:stroke fill;box-shadow:inset 0 0 0 3px #fff3d2,0 6px 0 var(--deep2),0 10px 16px rgba(122,91,194,.35)}
+.btn::before{content:"★";position:absolute;left:16px;top:50%;transform:translateY(-52%) rotate(-12deg);font-size:26px;color:var(--yel);-webkit-text-stroke:0;text-shadow:0 0 0 #fff,0 2px 0 #d9ae3a}
+.btn:active{transform:translateY(4px);box-shadow:inset 0 0 0 3px #fff3d2,0 2px 0 var(--deep2)}
+.btn.alt{background:linear-gradient(180deg,#c6d6fb,#9db7f1)}
+.btn.small{border-radius:999px;min-width:0;padding:8px 24px;font-size:19px;-webkit-text-stroke:4px var(--deep)}
+.btn.small::before{content:none}
+#loading img{width:120px;height:120px;object-fit:contain;animation:spin 1.1s linear infinite;filter:drop-shadow(0 0 0 #fff) drop-shadow(0 0 6px #fff)}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Home: the stage reproduces background-size:cover, so the buttons stay right under the title baked into the image */
+#home{padding:0;overflow:hidden;background:#d9c4f0}
+#homeStage{--r:.45;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:max(100vw,calc(100dvh*var(--r)));height:max(100dvh,calc(100vw/var(--r)));background:url(assets/home.jpg) center/100% 100% no-repeat}
+#homeTitleWrap{position:absolute;left:50%;bottom:53%;transform:translateX(-50%);width:62%}
+#homeTitle{width:100%;height:auto;display:block;animation:float 3.4s ease-in-out infinite;filter:drop-shadow(0 6px 8px rgba(122,91,194,.3))}
+#homeBtns{position:absolute;left:50%;top:48%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:16px}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@media (prefers-reduced-motion:reduce){#homeTitle{animation:none}}
+/* Wide screens (laptop/PC, or phone held sideways): separate 16:9 background, title sits top-left */
+@media (orientation:landscape){#homeStage{--r:1.7778;background-image:url(assets/home-pc.jpg)}#homeTitleWrap{left:28%;bottom:45%;width:41%}#homeBtns{left:28%;top:57%}}
+/* panel = the "Happy Birthday" card: lavender -> pale blue, cream gold border, soft inner outline */
+.panel{position:relative;max-width:520px;width:100%;padding:18px;border-radius:18px;border:4px solid #fff3d2;
+ background:linear-gradient(135deg,#b9a7ee 0%,#c9d3fa 55%,#f4f7ff 100%);
+ box-shadow:0 0 0 3px #e9c96a,inset 0 0 0 3px rgba(255,255,255,.55),0 10px 24px rgba(122,91,194,.3)}
+.panel::after{content:"✦";position:absolute;right:-14px;bottom:-16px;font-size:34px;color:var(--pink);text-shadow:0 0 0 #fff,0 0 6px #fff}
+.pieces{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.pc{position:relative;aspect-ratio:1;border-radius:16px;background:#fff;border:4px solid #fff;outline:3px solid var(--soft);padding:6px;cursor:pointer;box-shadow:0 4px 0 rgba(122,91,194,.25)}
+.pc img{width:100%;height:100%;object-fit:contain;display:block}
+.pc.sel{outline-color:var(--yel);background:#fffbe8}
+.pc.sel::after{content:"★";position:absolute;top:-12px;right:-8px;font-size:26px;color:var(--yel);text-shadow:0 0 3px var(--deep),0 2px 0 var(--deep)}
+.pc.off{opacity:.3;pointer-events:none;filter:grayscale(1)}
+.row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+/* HUD = washi tape label (like the "10/16" tag) */
+#hud{display:flex;align-items:center;gap:10px;font-size:22px;color:#e39a2e;background:var(--cream);padding:6px 22px;border-left:4px dashed #f0d89a;border-right:4px dashed #f0d89a;transform:rotate(-1.5deg);box-shadow:0 3px 6px rgba(122,91,194,.25)}
+#hud img{width:36px;height:36px;object-fit:contain}
+#board{display:grid;gap:6px;width:min(92vw,62vh,520px);aspect-ratio:1;padding:10px;border-radius:18px;border:4px solid #fff3d2;
+ background:linear-gradient(135deg,#b9a7ee,#c9d3fa 60%,#f4f7ff);box-shadow:0 0 0 3px #e9c96a,inset 0 0 0 3px rgba(255,255,255,.55),0 10px 24px rgba(122,91,194,.3)}
+.cell{background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:8%;min-width:0;min-height:0;box-shadow:inset 0 0 0 2px #dfd5f8}
+.cell img{width:100%;height:100%;object-fit:contain;animation:pop .25s}
+.wait{pointer-events:none;cursor:wait}
+.wait .cell{cursor:wait}
+.cell.win{background:#fff0b8;box-shadow:inset 0 0 0 3px var(--yel)}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+#mute{position:fixed;top:10px;right:10px;z-index:9;width:46px;height:46px;border:none;background:none;padding:6px;cursor:pointer}
+#mute img{width:100%;height:100%;display:block;filter:drop-shadow(0 0 3px #fff)}
+</style>
+</head>
+<body>
+<button id="mute" title="Music"><img id="muteImg" src="assets/sound-on.png" alt=""></button>
+
+<div id="loading" class="screen on"><img src="assets/logo.png" alt="loading"></div>
+
+<div id="home" class="screen">
+  <div id="homeStage">
+    <div id="homeTitleWrap"><img id="homeTitle" src="assets/title.png" alt="" onerror="this.style.display='none'"></div>
+    <div id="homeBtns">
+      <button class="btn" data-mode="1">1 player</button>
+      <button class="btn alt" data-mode="2">2 players</button>
+    </div>
+  </div>
+</div>
+
+<div id="pick" class="screen">
+  <h2 id="pickTitle"></h2>
+  <div class="panel"><div class="pieces" id="pieces"></div></div>
+  <div class="row"><button class="btn small alt" id="pickBack">← Back</button></div>
+</div>
+
+<div id="grid" class="screen">
+  <h2>Choose a grid</h2>
+  <div class="row">
+    <button class="btn" data-n="3">3 x 3</button>
+    <button class="btn" data-n="5">5 x 5</button>
+    <button class="btn" data-n="7">7 x 7</button>
+  </div>
+  <button class="btn small alt" id="gridBack">← Back</button>
+</div>
+
+<div id="game" class="screen">
+  <div id="hud"><img id="hudImg" alt=""><span id="hudTxt"></span></div>
+  <div id="board"></div>
+  <div class="row">
+    <button class="btn small" id="again">Play again</button>
+    <button class="btn small alt" id="menu">Menu</button>
+  </div>
+</div>
+
+<audio id="bgm" src="assets/music.mp3" loop preload="auto"></audio>
+
+<script>
+// ====== SETTINGS ======
+const PIECE_COUNT = 9;                         // assets/pieces/1.png ... 9.png
+const pieceSrc = i => `assets/pieces/${i}.png`;
+const WIN_LEN = {3:3, 5:4, 7:5};               // pieces in a row needed to win
+// ======================
+
+const $ = s => document.querySelector(s);
+const show = id => { document.querySelectorAll('.screen').forEach(e => e.classList.remove('on')); $('#'+id).classList.add('on'); };
+const bgm = $('#bgm'); bgm.volume = .5;
+let muted = false;
+$('#mute').onclick = () => { muted = !muted; $('#muteImg').src = muted ? 'assets/sound-off.png' : 'assets/sound-on.png'; muted ? bgm.pause() : bgm.play().catch(()=>{}); };
+const startMusic = () => { if (!muted) bgm.play().catch(()=>{}); };
+document.addEventListener('pointerdown', startMusic, {once:true});
+
+// Preload
+const files = ['assets/logo.png','assets/home.jpg','assets/home-pc.jpg','assets/title.png','assets/sound-on.png','assets/sound-off.png'];
+for (let i=1;i<=PIECE_COUNT;i++) files.push(pieceSrc(i));
+const minWait = new Promise(r => setTimeout(r, 1200));
+Promise.all([minWait, ...files.map(f => new Promise(r => { const im = new Image(); im.onload = im.onerror = r; im.src = f; }))])
+  .then(() => { show('home'); startMusic(); });
+
+// Auto-trim the empty transparent border around title.png, so its visible part sits exactly above the buttons
+(function(){
+  const img = $('#homeTitle');
+  const trim = () => {
+    if (img.dataset.trimmed || !img.naturalWidth) return;
+    img.dataset.trimmed = '1';
+    try {
+      const w = img.naturalWidth, h = img.naturalHeight;
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const cx = c.getContext('2d'); cx.drawImage(img, 0, 0);
+      const d = cx.getImageData(0, 0, w, h).data;
+      let t = h, b = -1, l = w, r = -1;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y*w + x)*4 + 3] > 20) {
+        if (y < t) t = y; if (y > b) b = y; if (x < l) l = x; if (x > r) r = x;
+      }
+      if (b < 0 || (t === 0 && l === 0 && b === h-1 && r === w-1)) return;
+      const o = document.createElement('canvas'); o.width = r-l+1; o.height = b-t+1;
+      o.getContext('2d').drawImage(c, l, t, o.width, o.height, 0, 0, o.width, o.height);
+      img.src = o.toDataURL('image/png');
+    } catch (e) { /* if the browser blocks it, the original image is kept */ }
+  };
+  img.complete ? trim() : img.addEventListener('load', trim);
+})();
+
+let botTimer = null;
+let S = {mode:1, picks:[null,null], step:0, n:3, board:[], turn:0, over:false};
+
+document.querySelectorAll('#home .btn').forEach(b => b.onclick = () => {
+  S.mode = +b.dataset.mode; S.picks = [null,null]; S.step = 0; renderPick(); show('pick');
+});
+
+function renderPick(){
+  const who = S.mode === 1 ? 'Choose your piece' : `Player ${S.step+1}: choose your piece`;
+  $('#pickTitle').textContent = who;
+  const box = $('#pieces'); box.innerHTML = '';
+  for (let i=1;i<=PIECE_COUNT;i++){
+    const d = document.createElement('div');
+    d.className = 'pc' + (S.step===1 && S.picks[0]===i ? ' off' : '');
+    d.innerHTML = `<img src="${pieceSrc(i)}" alt="">`;
+    d.onclick = () => choose(i, d);
+    box.appendChild(d);
+  }
+}
+function choose(i, el){
+  el.classList.add('sel');
+  S.picks[S.step] = i;
+  setTimeout(() => {
+    if (S.mode === 1){
+      const rest = [...Array(PIECE_COUNT)].map((_,k)=>k+1).filter(k => k !== i);
+      S.picks[1] = rest[Math.floor(Math.random()*rest.length)];
+      show('grid');
+    } else if (S.step === 0){ S.step = 1; renderPick(); }
+    else show('grid');
+  }, 250);
+}
+$('#pickBack').onclick = () => {
+  if (S.mode === 2 && S.step === 1){ S.step = 0; S.picks = [null,null]; renderPick(); } else show('home');
+};
+$('#gridBack').onclick = () => { S.step = 0; S.picks = [null,null]; renderPick(); show('pick'); };
+document.querySelectorAll('#grid [data-n]').forEach(b => b.onclick = () => { S.n = +b.dataset.n; start(); });
+$('#again').onclick = start;
+$('#menu').onclick = () => { clearTimeout(botTimer); S.thinking = false; $('#board').classList.remove('wait'); show('home'); };
+
+function start(){
+  const n = S.n;
+  clearTimeout(botTimer); $('#board').classList.remove('wait');
+  S.board = Array(n*n).fill(-1); S.turn = 0; S.over = false; S.thinking = false;
+  const bd = $('#board'); bd.innerHTML = '';
+  bd.style.gridTemplateColumns = `repeat(${n},1fr)`;
+  bd.style.gridTemplateRows = `repeat(${n},1fr)`;
+  for (let i=0;i<n*n;i++){
+    const c = document.createElement('div'); c.className = 'cell'; c.onclick = () => move(i); bd.appendChild(c);
+  }
+  updateHud(); show('game');
+}
+// While Xavier is thinking, swallow every click/tap on the board (nothing is queued or shown)
+['click','pointerdown','touchstart'].forEach(ev => $('#board').addEventListener(ev, e => {
+  if (S.thinking) { e.stopImmediatePropagation(); e.preventDefault(); }
+}, true));
+function updateHud(msg, who){
+  const p = who ?? S.turn;
+  $('#hudImg').src = pieceSrc(S.picks[p]);
+  $('#hudTxt').textContent = msg || (S.mode===1 ? (S.turn===0 ? 'Your turn' : 'Xavier is thinking...') : `Player ${S.turn+1}'s turn`);
+}
+function place(i, p){
+  S.board[i] = p;
+  $('#board').children[i].innerHTML = `<img src="${pieceSrc(S.picks[p])}" alt="">`;
+}
+function move(i){
+  if (S.over || S.thinking || S.board[i] !== -1) return;
+  if (S.mode === 1 && S.turn === 1) return;
+  play(i);
+}
+function play(i){
+  const p = S.turn; place(i, p);
+  const line = findWin(S.board, S.n, p, i);
+  if (line){ S.over = true; line.forEach(k => $('#board').children[k].classList.add('win'));
+    updateHud(S.mode===1 ? (p===0 ? 'You win! 🎉' : 'Xavier wins!') : `Player ${p+1} wins! 🎉`, p); return; }
+  if (S.board.every(v => v !== -1)){ S.over = true; updateHud("It's a draw!", p); return; }
+  S.turn = 1 - p; updateHud();
+  S.thinking = S.mode === 1 && S.turn === 1;
+  $('#board').classList.toggle('wait', S.thinking);
+  if (S.thinking) botTimer = setTimeout(() => { S.thinking = false; $('#board').classList.remove('wait'); play(botMove()); }, 700);
+}
+
+function findWin(b, n, p, last){
+  const L = WIN_LEN[n], r0 = Math.floor(last/n), c0 = last % n;
+  for (const [dr,dc] of [[0,1],[1,0],[1,1],[1,-1]]){
+    const line = [last];
+    for (const s of [1,-1]){
+      let r = r0+dr*s, c = c0+dc*s;
+      while (r>=0 && r<n && c>=0 && c<n && b[r*n+c] === p){ line.push(r*n+c); r+=dr*s; c+=dc*s; }
+    }
+    if (line.length >= L) return line;
+  }
+  return null;
+}
+function botMove(){
+  const b = S.board, n = S.n, empty = b.map((v,i)=>v===-1?i:-1).filter(i=>i>=0);
+  if (n === 3) return minimax(b.slice(), 1, 0).m;
+  const wins = p => empty.find(i => { b[i] = p; const w = findWin(b,n,p,i); b[i] = -1; return w; });
+  let m = wins(1); if (m !== undefined) return m;
+  m = wins(0); if (m !== undefined) return m;
+  const mid = (n-1)/2;
+  const score = i => {
+    const r = Math.floor(i/n), c = i%n; let s = -(Math.abs(r-mid)+Math.abs(c-mid));
+    for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++){
+      const rr=r+dr, cc=c+dc; if ((dr||dc) && rr>=0&&rr<n&&cc>=0&&cc<n && b[rr*n+cc]!==-1) s += b[rr*n+cc]===1 ? 2.2 : 2;
+    }
+    return s + Math.random()*.5;
+  };
+  return empty.sort((x,y) => score(y)-score(x))[0];
+}
+function minimax(b, p, depth){
+  const empty = b.map((v,i)=>v===-1?i:-1).filter(i=>i>=0);
+  let best = {s: p===1 ? -99 : 99, m: empty[0]};
+  for (const i of empty){
+    b[i] = p;
+    let s;
+    if (findWin(b,3,p,i)) s = (p===1 ? 10 : -10) - (p===1 ? depth : -depth);
+    else if (empty.length === 1) s = 0;
+    else s = minimax(b, 1-p, depth+1).s;
+    b[i] = -1;
+    if ((p===1 && s > best.s) || (p===0 && s < best.s)) best = {s, m:i};
+  }
+  return best;
+}
+</script>
+</body>
+</html>

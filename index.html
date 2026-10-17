@@ -38,7 +38,7 @@ h1,h2{margin:0;font-weight:800;font-size:clamp(30px,8vw,46px);color:var(--deep);
 /* Home: the stage reproduces background-size:cover, so the buttons stay right under the title baked into the image */
 #home{padding:0;overflow:hidden;background:#d9c4f0}
 #homeStage{--r:.45;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:max(100vw,calc(100dvh*var(--r)));height:max(100dvh,calc(100vw/var(--r)));background:url(assets/home.jpg) center/100% 100% no-repeat}
-#homeTitleWrap{position:absolute;left:50%;bottom:60%;transform:translateX(-50%);width:62%}
+#homeTitleWrap{position:absolute;left:50%;bottom:53%;transform:translateX(-50%);width:62%}
 #homeTitle{width:100%;height:auto;display:block;animation:float 3.4s ease-in-out infinite;filter:drop-shadow(0 6px 8px rgba(122,91,194,.3))}
 #homeBtns{position:absolute;left:50%;top:48%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:16px}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
@@ -259,15 +259,39 @@ function botMove(){
   const wins = p => empty.find(i => { b[i] = p; const w = findWin(b,n,p,i); b[i] = -1; return w; });
   let m = wins(1); if (m !== undefined) return m;
   m = wins(0); if (m !== undefined) return m;
-  const mid = (n-1)/2;
+  const L = WIN_LEN[n], mid = (n-1)/2;
+  const PW = [1, 6, 40, 300, 2000];            // points by how many pieces already sit in a window
   const score = i => {
-    const r = Math.floor(i/n), c = i%n; let s = -(Math.abs(r-mid)+Math.abs(c-mid));
-    for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++){
-      const rr=r+dr, cc=c+dc; if ((dr||dc) && rr>=0&&rr<n&&cc>=0&&cc<n && b[rr*n+cc]!==-1) s += b[rr*n+cc]===1 ? 2.2 : 2;
+    const r0 = Math.floor(i/n), c0 = i%n;
+    let atk = 0, def = 0;
+    for (const [dr,dc] of [[0,1],[1,0],[1,1],[1,-1]]){
+      for (let k = 0; k < L; k++){               // every window of L cells that contains this cell
+        let mine = 0, theirs = 0, ok = true;
+        for (let j = 0; j < L; j++){
+          const r = r0 + dr*(j-k), c = c0 + dc*(j-k);
+          if (r<0 || r>=n || c<0 || c>=n){ ok = false; break; }
+          const v = b[r*n+c];
+          if (v === 1) mine++; else if (v === 0) theirs++;
+        }
+        if (!ok) continue;
+        if (theirs === 0) atk += PW[mine];       // a line I can still build
+        if (mine === 0) def += PW[theirs];       // a line the player can still build
+      }
     }
-    return s + Math.random()*.5;
+    return atk + def*1.1 - (Math.abs(r0-mid)+Math.abs(c0-mid))*0.3 + Math.random()*.5;
   };
-  return empty.sort((x,y) => score(y)-score(x))[0];
+  // How many different cells would let player p win at once, if p played at `at`? (2 or more = a "fork": can't be blocked)
+  const threatsAfter = (p, at) => {
+    b[at] = p; let cnt = 0;
+    for (let k = 0; k < b.length; k++) if (b[k] === -1){ b[k] = p; if (findWin(b,n,p,k)) cnt++; b[k] = -1; }
+    b[at] = -1; return cnt;
+  };
+  const myForks  = empty.filter(i => threatsAfter(1, i) >= 2);   // moves that create an unstoppable double threat
+  const oppForks = empty.filter(i => threatsAfter(0, i) >= 2);   // moves where the player would get one
+  const best = list => list.sort((x,y) => score(y)-score(x))[0];
+  if (myForks.length) return best(myForks);      // 3) set up my own double threat
+  if (oppForks.length) return best(oppForks);    // 4) take away the player's double threat
+  return best(empty);                            // 5) otherwise the best-scored cell
 }
 function minimax(b, p, depth){
   const empty = b.map((v,i)=>v===-1?i:-1).filter(i=>i>=0);
